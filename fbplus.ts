@@ -99,6 +99,16 @@ async function fetchPosts(
         "href",
         decodeURIComponent(link.attributes.href.replace("/leave.php?u=", ""))
       );
+      if (link.attributes.href.startsWith("/")) {
+        link.setAttribute(
+          "href",
+          "https://www.flashback.org" + link.attributes.href,
+        );
+      }
+      if (link.querySelector("i[class~='glyphicon-arrow-left']")) {
+        link.setAttribute("title", "Visa originalinlägg");
+      }
+
       link.setAttribute("rel", "noreferrer");
     }
     return {
