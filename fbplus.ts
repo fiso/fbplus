@@ -2,6 +2,38 @@ import express, { Response } from "express";
 import axios from "axios";
 import { Iconv } from "iconv";
 import fs from "fs";
+import assert from "assert";
+
+const cache: {
+  [key: string]: undefined | {
+    timestamp: number;
+    obj: unknown;
+  };
+} = {};
+
+const maxCacheAge = 1000 * 60 * 10; // 10 minutes
+
+function fromCache<T>(key: string): T | undefined {
+  const item = cache[key];
+  if (!item) {
+    return undefined;
+  }
+
+  const now = Number(new Date());
+  if (now - item.timestamp > maxCacheAge) {
+    delete cache[key];
+    return undefined;
+  }
+
+  return item.obj as T;
+}
+
+function storeInCache(key: string, obj: unknown): void {
+  cache[key] = {
+    timestamp: Number(new Date()),
+    obj,
+  };
+}
 
 async function fetchAndReencode(url: string): Promise<string> {
   const response = await axios({
@@ -26,9 +58,9 @@ function fixLinks(html: string): string {
     rx,
     (
       match: string,
-      ps: string[],
-      offset: number,
-      whole: string,
+      _ps: string[],
+      _offset: number,
+      _whole: string,
       groups: {
         [key: string]: string;
       }
@@ -41,10 +73,19 @@ function fixLinks(html: string): string {
   );
 }
 
-async function fetchPosts(url: string): Promise<FlashbackPost[]> {
-  const html = await fetchAndReencode(url);
+async function fetchPosts(
+  url: string,
+  html?: string
+): Promise<FlashbackPost[]> {
+  const cacheKey = "fetchPosts" + url;
+  const cached = fromCache<FlashbackPost[]>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  html = html || (await fetchAndReencode(url));
   const rx = /class="post_message".*?id="(?<postId>.*?)"/gms;
   const posts = [...html.matchAll(rx)].map((match) => {
+    assert(html);
     let closingTagsNeeded = 1;
     let endIndex = -1;
     let search = match.index;
@@ -75,6 +116,7 @@ async function fetchPosts(url: string): Promise<FlashbackPost[]> {
       body: fixLinks(html.slice(start, endIndex).trim()),
     };
   });
+  storeInCache(cacheKey, posts);
   return posts;
 }
 
@@ -96,6 +138,12 @@ async function fetchThread(
   maxPages?: number
 ): Promise<FlashbackThread> {
   firstPage = firstPage || 0;
+  url = url.replace(/p\d+$/gms, ""); // Strip any page offset
+  const cacheKey = "fetchThread" + url + firstPage + maxPages;
+  const cached = fromCache<FlashbackThread>(cacheKey);
+  if (cached) {
+    return cached;
+  }
   const thread = {
     id: "",
     title: "",
@@ -132,12 +180,17 @@ async function fetchThread(
     pageNumber < firstPage + maxPages;
     pageNumber++
   ) {
-    const posts = await fetchPosts(url + "p" + String(pageNumber + 1));
+    const posts = await fetchPosts(
+      url + "p" + String(pageNumber + 1),
+      pageNumber === firstPage ? html : undefined
+    );
     thread.pages.push({
       index: pageNumber,
       posts,
     });
   }
+
+  storeInCache(cacheKey, thread);
 
   return thread;
 }
@@ -182,7 +235,6 @@ app.get("/thread", async function (req, res) {
     return;
   }
 
-  console.log(`Fetching ${pages} pages starting at index ${startPage}`);
   try {
     const thread = await fetchThread(threadUrl, startPage, pages);
     const markup = renderThreadBody(thread);
