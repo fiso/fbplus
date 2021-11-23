@@ -63,27 +63,6 @@ type FlashbackPost = {
   link: string;
 };
 
-function fixLinks(html: string): string {
-  const rx = /<a [^>]*?"\/leave.php\?u=(?<url>.*?)"/gms;
-  return html.replace(
-    rx,
-    (
-      match: string,
-      _ps: string[],
-      _offset: number,
-      _whole: string,
-      groups: {
-        [key: string]: string;
-      }
-    ) => {
-      if (!groups?.url) {
-        return match;
-      }
-      return decodeURIComponent(match.replace("/leave.php?u=", ""));
-    }
-  );
-}
-
 async function fetchPosts(
   url: string,
   html?: string
@@ -115,9 +94,16 @@ async function fetchPosts(
       dateText = formatDate(Number(new Date()));
     }
     const d = new Date(`${dateText}, ${timeText}`);
+    for (const link of body.querySelectorAll("[href^='/leave.php']")) {
+      link.setAttribute(
+        "href",
+        decodeURIComponent(link.attributes.href.replace("/leave.php?u=", ""))
+      );
+      link.setAttribute("rel", "noreferrer");
+    }
     return {
       id,
-      body: fixLinks(body.toString()),
+      body: body.toString(),
       user: {
         username,
         link: "https://www.flashback.org" + userLink,
@@ -247,8 +233,12 @@ ${
           (post) => `
 <article>
 <header>
-  <a href="${post.user.link}" target="_blank" rel="noreferrer">${post.user.username}</a>
-  <time><a href="${post.link}" target="_blank" rel="noreferrer">${formatDateAndTime(
+  <a href="${post.user.link}" target="_blank" rel="noreferrer">${
+            post.user.username
+          }</a>
+  <time><a href="${
+    post.link
+  }" target="_blank" rel="noreferrer">${formatDateAndTime(
             post.timestamp
           )}</a></time>
 </header>
