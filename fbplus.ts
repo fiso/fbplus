@@ -52,6 +52,7 @@ async function fetchAndReencode(url: string): Promise<string> {
 
 type FlashbackUser = {
   username: string;
+  link: string;
 };
 
 type FlashbackPost = {
@@ -59,6 +60,7 @@ type FlashbackPost = {
   body: string;
   timestamp: number;
   user: FlashbackUser;
+  link: string;
 };
 
 function fixLinks(html: string): string {
@@ -97,17 +99,31 @@ async function fetchPosts(
   const posts = postElements.map((pe) => {
     const body = pe.querySelector(".post_message");
     const id = pe.attributes["data-postid"];
-    const username = pe.querySelector(".post-user-username")?.innerText.trim();
+    const usernameEl = pe.querySelector(".post-user-username");
+    const username = usernameEl?.innerText.trim();
+    const userLink = usernameEl?.attributes.href;
     const timestamp = pe.querySelector(".post-heading")?.innerText.trim();
-    assert(body && timestamp && username);
-    const d = new Date(timestamp.slice(0, timestamp.indexOf("\n")));
+    const link = pe.querySelector("[target='new']")?.attributes.href;
+    assert(body && timestamp && username && userLink && link);
+    const relevantPart = timestamp.slice(0, timestamp.indexOf("\n"));
+    let [dateText, timeText] = relevantPart.split(",").map((s) => s.trim());
+    if (dateText.toLocaleUpperCase().startsWith("IG&ARING;R")) {
+      dateText = formatDate(
+        Number(new Date(Number(new Date()) - 24 * 60 * 60 * 1000))
+      );
+    } else if (dateText.toLocaleUpperCase().startsWith("IDAG")) {
+      dateText = formatDate(Number(new Date()));
+    }
+    const d = new Date(`${dateText}, ${timeText}`);
     return {
       id,
       body: fixLinks(body.toString()),
       user: {
         username,
+        link: "https://www.flashback.org" + userLink,
       },
       timestamp: Number(d),
+      link: "https://www.flashback.org" + link,
     };
   });
 
@@ -156,17 +172,10 @@ async function fetchThread(
   }
   thread.id = result.groups.threadId;
 
-  thread.pagesAvailable = 1;
-
-  const lastLink = doc.querySelector(".last a");
-  const href = lastLink?.attributes.href;
-  if (href) {
-    result = /\/t(?<threadId>.*?)p(?<pages>.*)/gms.exec(href);
-    if (!result?.groups) {
-      throw new Error("Failed to find result.groups for pages");
-    }
-    thread.pagesAvailable = Number(result.groups.pages);
-  }
+  const totalPages = doc.querySelector("[data-total-pages]");
+  thread.pagesAvailable = Number(
+    totalPages?.attributes["data-total-pages"] || 1
+  );
 
   const ogTitle = doc.querySelector("[property='og:title']");
   if (!ogTitle) {
@@ -203,25 +212,45 @@ const p = (n: number) => String(n).padStart(2, "0");
 
 function formatDate(timestamp: number): string {
   const d = new Date(timestamp);
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}, ${p(
-    d.getHours()
-  )}:${p(d.getMinutes())}`;
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function formatDateAndTime(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${formatDate(timestamp)}, ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function flashbackThreadLink(threadId: string, pageIndex?: number) {
+  return `https://www.flashback.org/t${threadId}${
+    typeof pageIndex === "number" ? `p${pageIndex + 1}` : ""
+  }`;
 }
 
 function renderThreadBody(thread: FlashbackThread): string {
   return `
-${thread.pages[0].index === 0 ? `<h1>${thread.title}</h1>` : ""}${thread.pages
+${
+  thread.pages[0].index === 0
+    ? `<h1><a href="${flashbackThreadLink(
+        thread.id
+      )}" target="_blank" rel="noreferrer">${thread.title}</a></h1>`
+    : ""
+}${thread.pages
     .map(
       (page) => `
-<h2 class="page-number"><span>${page.index + 1} / ${
+<h2 class="page-number"><a href="${flashbackThreadLink(
+        thread.id,
+        page.index
+      )}" target="_blank" rel="noreferrer">${page.index + 1} / ${
         thread.pagesAvailable
-      }</span></h2>${page.posts
+      }</a></h2>${page.posts
         .map(
           (post) => `
 <article>
 <header>
-  <span>${post.user.username}</span>
-  <time>${formatDate(post.timestamp)}</time>
+  <a href="${post.user.link}" target="_blank" rel="noreferrer">${post.user.username}</a>
+  <time><a href="${post.link}" target="_blank" rel="noreferrer">${formatDateAndTime(
+            post.timestamp
+          )}</a></time>
 </header>
 ${post.body}
 </article>`
