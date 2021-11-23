@@ -1,0 +1,27 @@
+{
+    "name": "@types/iconv",
+    "version": "3.0.0",
+    "description": "TypeScript definitions for iconv",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/iconv",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "delphinus",
+            "url": "https://github.com/delphinus35",
+            "githubUsername": "delphinus35"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/iconv"
+    },
+    "scripts": {},
+    "dependencies": {
+        "@types/node": "*"
+    },
+    "typesPublisherContentHash": "f79b043825496ae39b382b1a074717ff89d513efbc917e81ed539a658c87f478",
+    "typeScriptVersion": "3.6"
+}

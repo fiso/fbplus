@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Flashback Reader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="style.css" />
+  </head>
+  <script>
+    function documentReady(cb) {
+      if (document.readyState === "complete") {
+        cb();
+      } else {
+        document.addEventListener("DOMContentLoaded", cb);
+      }
+    }
+
+    let lastFetchedPage = -1;
+    let fetching = false;
+    let threadUrl = "";
+
+    documentReady(async () => {
+      threadUrl = document.location.hash.slice(1);
+      fetching = true;
+      const result = await fetch(`/thread?url=${threadUrl}&start=0&pages=3`);
+      if (result.status !== 200) {
+        console.error("Error fetching!");
+        return;
+      }
+      lastFetchedPage = 2;
+      document.body.innerHTML = await result.text();
+      fetching = false;
+    });
+
+    window.addEventListener(
+      "scroll",
+      (e) => {
+        if (fetching) {
+          return;
+        }
+
+        const scrollPosition =
+          window.scrollY /
+          (window.document.body.scrollHeight - window.innerHeight);
+        if (scrollPosition > 0.9) {
+          console.log(
+            `Fetching pages ${lastFetchedPage + 1}–${lastFetchedPage + 4}…`
+          );
+          fetching = true;
+          (async () => {
+            const result = await fetch(
+              `/thread?url=${threadUrl}&start=${lastFetchedPage + 1}&pages=3`
+            );
+            if (result.status !== 200) {
+              console.error("Error fetching!");
+              fetching = false;
+              return;
+            }
+            lastFetchedPage += 3;
+            document.body.innerHTML += await result.text();
+            fetching = false;
+          })();
+        }
+      },
+      { passive: true }
+    );
+  </script>
+  <body></body>
+</html>
