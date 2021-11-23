@@ -94,7 +94,7 @@ async function fetchPosts(
       dateText = formatDate(Number(new Date()));
     }
     const d = new Date(`${dateText}, ${timeText}`);
-    for (const link of body.querySelectorAll("[href^='/leave.php']")) {
+    for (const link of body.querySelectorAll("[href]")) {
       link.setAttribute(
         "href",
         decodeURIComponent(link.attributes.href.replace("/leave.php?u=", ""))
