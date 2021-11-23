@@ -5,10 +5,12 @@ import fs from "fs";
 import assert from "assert";
 
 const cache: {
-  [key: string]: undefined | {
-    timestamp: number;
-    obj: unknown;
-  };
+  [key: string]:
+    | undefined
+    | {
+        timestamp: number;
+        obj: unknown;
+      };
 } = {};
 
 const maxCacheAge = 1000 * 60 * 10; // 10 minutes
@@ -138,7 +140,8 @@ async function fetchThread(
   maxPages?: number
 ): Promise<FlashbackThread> {
   firstPage = firstPage || 0;
-  url = url.replace(/p\d+$/gms, ""); // Strip any page offset
+  const baseUrl = url.replace(/p\d+$/gms, ""); // Strip any page offset
+  url = `${baseUrl}p${firstPage + 1}`;
   const cacheKey = "fetchThread" + url + firstPage + maxPages;
   const cached = fromCache<FlashbackThread>(cacheKey);
   if (cached) {
@@ -151,22 +154,26 @@ async function fetchThread(
     pagesAvailable: 0,
   };
   const html = await fetchAndReencode(url);
-  let result = /class="last".*?href="(?<href>.*?)"/gms.exec(html);
-  const href = result?.groups?.href;
-  if (!href) {
-    return thread;
-  }
-
-  result = /\/t(?<threadId>.*?)p(?<pages>.*)/gms.exec(href);
-  if (!result?.groups) {
-    return thread;
+  let result = /\/t(?<threadId>.*?)(p|$)/gms.exec(url);
+  if (!result?.groups?.threadId) {
+    throw new Error("Failed to find thread id");
   }
   thread.id = result.groups.threadId;
-  thread.pagesAvailable = Number(result.groups.pages);
+  thread.pagesAvailable = 1;
+
+  result = /class="last".*?href="(?<href>.*?)"/gms.exec(html);
+  const href = result?.groups?.href;
+  if (href) {
+    result = /\/t(?<threadId>.*?)p(?<pages>.*)/gms.exec(href);
+    if (!result?.groups) {
+      throw new Error("Failed to find result.groups for pages");
+    }
+    thread.pagesAvailable = Number(result.groups.pages);
+  }
 
   result = /property="og:title" content="(?<title>.*)"/.exec(html);
   if (!result?.groups) {
-    return thread;
+    throw new Error("Failed to find result.groups for og:title");
   }
   thread.title = result.groups.title;
 
@@ -181,7 +188,7 @@ async function fetchThread(
     pageNumber++
   ) {
     const posts = await fetchPosts(
-      url + "p" + String(pageNumber + 1),
+      baseUrl + "p" + String(pageNumber + 1),
       pageNumber === firstPage ? html : undefined
     );
     thread.pages.push({
@@ -200,7 +207,9 @@ function renderThreadBody(thread: FlashbackThread): string {
 ${thread.pages[0].index === 0 ? `<h1>${thread.title}</h1>` : ""}${thread.pages
     .map(
       (page) => `
-<h2 class="page-number">Sida ${page.index + 1}</h2>${page.posts
+<h2 class="page-number"><span>${page.index + 1} / ${
+        thread.pagesAvailable
+      }</span></h2>${page.posts
         .map(
           (post) => `
 <article>${post.body}</article>`
@@ -237,10 +246,14 @@ app.get("/thread", async function (req, res) {
 
   try {
     const thread = await fetchThread(threadUrl, startPage, pages);
-    const markup = renderThreadBody(thread);
-    res.send(markup);
+    const html = renderThreadBody(thread);
+    res.json({
+      html,
+      pagesAvailable: thread.pagesAvailable,
+    });
   } catch (e) {
     console.error("Error fetching!");
+    console.error(e);
     res.statusCode = 500;
     res.end();
   }
