@@ -28,7 +28,7 @@ body > h2 a {
 }
 
 body > .page-number {
-  color: #ccc;
+  color: #fff;
   font-size: 2em;
   font-weight: 200;
   text-transform: uppercase;
@@ -36,11 +36,14 @@ body > .page-number {
   top: 32px;
   text-align: right;
   pointer-events: none;
+  margin-bottom: 8px;
 }
 
 body > .page-number a {
-  background-color: #fff;
+  background-color: #000;
   pointer-events: auto;
+  border-radius: 4px;
+  padding: 4px;
 }
 
 body > hr {
