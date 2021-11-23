@@ -39,20 +39,27 @@ body > hr {
   background-color: #eee;
 }
 
-body > article {
-  padding: 12px;
-  border-radius: 4px;
+body > article > header {
+  font-size: .8em;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
 }
 
 body > article:not(:last-child) {
   margin-bottom: 32px;
 }
 
-body > article:nth-child(even) {
+body > article .post_message {
+  padding: 12px;
+  border-radius: 4px;
+}
+
+body > article:nth-child(even) .post_message {
   background-color: #eee;
 }
 
-body > article:nth-child(odd) {
+body > article:nth-child(odd) .post_message {
   background-color: #ddd;
 }
 

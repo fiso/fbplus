@@ -1,8 +1,9 @@
-import express, { Response } from "express";
+import express from "express";
 import axios from "axios";
 import { Iconv } from "iconv";
 import fs from "fs";
 import assert from "assert";
+import { parse } from "node-html-parser";
 
 const cache: {
   [key: string]:
@@ -49,9 +50,15 @@ async function fetchAndReencode(url: string): Promise<string> {
   return String(buffer);
 }
 
+type FlashbackUser = {
+  username: string;
+};
+
 type FlashbackPost = {
   id: string;
   body: string;
+  timestamp: number;
+  user: FlashbackUser;
 };
 
 function fixLinks(html: string): string {
@@ -85,39 +92,25 @@ async function fetchPosts(
     return cached;
   }
   html = html || (await fetchAndReencode(url));
-  const rx = /class="post_message".*?id="(?<postId>.*?)"/gms;
-  const posts = [...html.matchAll(rx)].map((match) => {
-    assert(html);
-    let closingTagsNeeded = 1;
-    let endIndex = -1;
-    let search = match.index;
-
-    while (endIndex < 0) {
-      const nextClosingTagIndex = html.indexOf("/div", search);
-      const nextOpeningTagIndex = html.indexOf("<div", search);
-
-      if (nextOpeningTagIndex < nextClosingTagIndex) {
-        closingTagsNeeded++;
-        search = nextOpeningTagIndex + 1;
-      }
-
-      if (nextClosingTagIndex < nextOpeningTagIndex) {
-        closingTagsNeeded--;
-        if (closingTagsNeeded < 1) {
-          endIndex = nextClosingTagIndex - 1;
-        } else {
-          search = nextClosingTagIndex + 1;
-        }
-      }
-    }
-
-    const start = html.indexOf(">", match.index) + 1;
-
+  const doc = parse(html);
+  const postElements = doc.querySelectorAll("[data-postid]");
+  const posts = postElements.map((pe) => {
+    const body = pe.querySelector(".post_message");
+    const id = pe.attributes["data-postid"];
+    const username = pe.querySelector(".post-user-username")?.innerText.trim();
+    const timestamp = pe.querySelector(".post-heading")?.innerText.trim();
+    assert(body && timestamp && username);
+    const d = new Date(timestamp.slice(0, timestamp.indexOf("\n")));
     return {
-      id: match.groups?.postId || "UNKNOWN",
-      body: fixLinks(html.slice(start, endIndex).trim()),
+      id,
+      body: fixLinks(body.toString()),
+      user: {
+        username,
+      },
+      timestamp: Number(d),
     };
   });
+
   storeInCache(cacheKey, posts);
   return posts;
 }
@@ -153,16 +146,20 @@ async function fetchThread(
     pages: [] as FlashbackThreadPage[],
     pagesAvailable: 0,
   };
+
   const html = await fetchAndReencode(url);
+  const doc = parse(html);
+
   let result = /\/t(?<threadId>.*?)(p|$)/gms.exec(url);
   if (!result?.groups?.threadId) {
     throw new Error("Failed to find thread id");
   }
   thread.id = result.groups.threadId;
+
   thread.pagesAvailable = 1;
 
-  result = /class="last".*?href="(?<href>.*?)"/gms.exec(html);
-  const href = result?.groups?.href;
+  const lastLink = doc.querySelector(".last a");
+  const href = lastLink?.attributes.href;
   if (href) {
     result = /\/t(?<threadId>.*?)p(?<pages>.*)/gms.exec(href);
     if (!result?.groups) {
@@ -171,11 +168,11 @@ async function fetchThread(
     thread.pagesAvailable = Number(result.groups.pages);
   }
 
-  result = /property="og:title" content="(?<title>.*)"/.exec(html);
-  if (!result?.groups) {
-    throw new Error("Failed to find result.groups for og:title");
+  const ogTitle = doc.querySelector("[property='og:title']");
+  if (!ogTitle) {
+    throw new Error("Failed to find for og:title");
   }
-  thread.title = result.groups.title;
+  thread.title = ogTitle.attributes.content;
 
   maxPages = Math.min(
     thread.pagesAvailable - firstPage,
@@ -202,6 +199,15 @@ async function fetchThread(
   return thread;
 }
 
+const p = (n: number) => String(n).padStart(2, "0");
+
+function formatDate(timestamp: number): string {
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}, ${p(
+    d.getHours()
+  )}:${p(d.getMinutes())}`;
+}
+
 function renderThreadBody(thread: FlashbackThread): string {
   return `
 ${thread.pages[0].index === 0 ? `<h1>${thread.title}</h1>` : ""}${thread.pages
@@ -212,7 +218,13 @@ ${thread.pages[0].index === 0 ? `<h1>${thread.title}</h1>` : ""}${thread.pages
       }</span></h2>${page.posts
         .map(
           (post) => `
-<article>${post.body}</article>`
+<article>
+<header>
+  <span>${post.user.username}</span>
+  <time>${formatDate(post.timestamp)}</time>
+</header>
+${post.body}
+</article>`
         )
         .join("")}`
     )
