@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
@@ -50,6 +51,9 @@ module.exports = {
     static: path.join(__dirname, "dist"),
     compress: true,
     port: 9000,
+    proxy: {
+      '/thread': 'http://localhost:3000',
+    }
   },
   plugins: [
     new HtmlWebpackPlugin({

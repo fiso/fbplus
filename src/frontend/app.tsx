@@ -1,10 +1,5 @@
 /** @jsx jsx */
-import React, {
-  FunctionComponent,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { FunctionComponent, useCallback, useEffect, useState } from "react";
 import { jsx } from "@emotion/react";
 import "./app.css";
 
@@ -49,7 +44,7 @@ export const App: FunctionComponent = () => {
 
       fetchThread();
     },
-    [lastFetchedPage]
+    [appendContent, threadUrl]
   );
 
   const onScrollWindow = useCallback(() => {
@@ -62,7 +57,7 @@ export const App: FunctionComponent = () => {
     if (scrollPosition > 0.9 && lastFetchedPage < pagesAvailable) {
       fetchPages(lastFetchedPage + 1, 3);
     }
-  }, [fetching, lastFetchedPage, pagesAvailable]);
+  }, [fetchPages, fetching, lastFetchedPage, pagesAvailable]);
 
   useEffect(() => {
     window.addEventListener("scroll", onScrollWindow, { passive: true });
@@ -75,7 +70,7 @@ export const App: FunctionComponent = () => {
   useEffect(() => {
     console.log(">> INITIAL FETCH");
     fetchPages();
-  }, []);
+  }, [fetchPages]);
 
   return <main dangerouslySetInnerHTML={{ __html: markup }}></main>;
 };

@@ -84,7 +84,9 @@ async function fetchPosts(
     const link = pe.querySelector("[target='new']")?.attributes.href;
     assert(body && timestamp && username && userLink && link);
     const relevantPart = timestamp.slice(0, timestamp.indexOf("\n"));
-    let [dateText, timeText] = relevantPart.split(",").map((s) => s.trim());
+    const parts = relevantPart.split(",").map((s) => s.trim());
+    let dateText = parts[0]
+    const timeText = parts[1];
     if (dateText.toLocaleUpperCase().startsWith("IG&ARING;R")) {
       dateText = formatDate(
         Number(new Date(Number(new Date()) - 24 * 60 * 60 * 1000))
@@ -161,7 +163,7 @@ async function fetchThread(
   const html = await fetchAndReencode(url);
   const doc = parse(html);
 
-  let result = /\/t(?<threadId>.*?)(p|$)/gms.exec(url);
+  const result = /\/t(?<threadId>.*?)(p|$)/gms.exec(url);
   if (!result?.groups?.threadId) {
     throw new Error("Failed to find thread id");
   }
