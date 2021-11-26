@@ -1,10 +1,15 @@
 * {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+  font-family: inherit;
 }
 
-body {
-  font-family: "Helvetica", "Arial", sans-serif;
+html {
+  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+main {
   padding: 0 32px 32px;
 }
 
@@ -12,7 +17,7 @@ a {
   color: inherit;
 }
 
-body > h1 {
+main > h1 {
   margin-bottom: 32px;
   position: sticky;
   top: 0;
@@ -22,12 +27,12 @@ body > h1 {
   background-color: #fff;
 }
 
-body > h1 a,
-body > h2 a {
+main > h1 a,
+main > h2 a {
   text-decoration: none;
 }
 
-body > .page-number {
+main > .page-number {
   color: #fff;
   font-size: 2em;
   font-weight: 200;
@@ -39,41 +44,41 @@ body > .page-number {
   margin-bottom: 8px;
 }
 
-body > .page-number a {
+main > .page-number a {
   background-color: #000;
   pointer-events: auto;
   border-radius: 4px;
   padding: 4px;
 }
 
-body > hr {
+main > hr {
   padding: 1px 0 0;
   margin-bottom: 32px;
   border: 0;
   background-color: #eee;
 }
 
-body > article > header {
+main > article > header {
   font-size: .8em;
   display: flex;
   justify-content: space-between;
   margin-bottom: 2px;
 }
 
-body > article:not(:last-child) {
+main > article:not(:last-child) {
   margin-bottom: 32px;
 }
 
-body > article .post_message {
+main > article .post_message {
   padding: 12px;
   border-radius: 4px;
 }
 
-body > article:nth-child(even) .post_message {
+main > article:nth-child(even) .post_message {
   background-color: #eee;
 }
 
-body > article:nth-child(odd) .post_message {
+main > article:nth-child(odd) .post_message {
   background-color: #ddd;
 }
 

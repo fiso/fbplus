@@ -1,7 +1,6 @@
 import express from "express";
 import axios from "axios";
 import { Iconv } from "iconv";
-import fs from "fs";
 import assert from "assert";
 import { parse } from "node-html-parser";
 
@@ -102,7 +101,7 @@ async function fetchPosts(
       if (link.attributes.href.startsWith("/")) {
         link.setAttribute(
           "href",
-          "https://www.flashback.org" + link.attributes.href,
+          "https://www.flashback.org" + link.attributes.href
         );
       }
       if (link.querySelector("i[class~='glyphicon-arrow-left']")) {
@@ -262,19 +261,8 @@ ${post.body}
 
 const app = express();
 
-const indexDocument = String(fs.readFileSync("./assets/index.html"));
-const style = String(fs.readFileSync("./assets/style.css"));
-
-app.get("/style.css", function (_req, res) {
-  res.set("Content-Type", "text/css");
-  res.send(style);
-});
-
-app.get("/", function (_req, res) {
-  res.send(indexDocument);
-});
-
 app.get("/thread", async function (req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
   const threadUrl = req.query.url;
   const startPage = Number(req.query.start || 0);
   const pages = req.query.pages ? Number(req.query.pages) : undefined;
