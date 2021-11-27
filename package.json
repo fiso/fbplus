@@ -1,7 +1,6 @@
 {
   "name": "fbplus",
   "version": "1.0.0",
-  "description": "",
   "main": "src/backend/fbplus.ts",
   "scripts": {
     "dev-backend": "nodemon --watch src/backend/*.ts src/backend/fbplus.ts",

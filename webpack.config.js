@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const path = require("path");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const CopyPlugin = require("copy-webpack-plugin");
-const TerserPlugin = require("terser-webpack-plugin");
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
-const production = process.env.NODE_ENV === "production";
+const production = process.env.NODE_ENV === 'production';
 
 module.exports = {
-  mode: production ? "production" : "development",
-  entry: "./src/frontend/index.ts",
-  devtool: "inline-source-map",
+  mode: production ? 'production' : 'development',
+  entry: './src/frontend/index.ts',
+  devtool: 'inline-source-map',
   ...(production
     ? {
         optimization: {
@@ -27,40 +27,40 @@ module.exports = {
       {
         test: /\.tsx?$/,
         use: {
-          loader: "ts-loader",
+          loader: 'ts-loader',
           options: {
-            configFile: "tsconfig.webpack.json",
+            configFile: 'tsconfig.webpack.json',
           },
         },
         exclude: /node_modules/,
       },
       {
         test: /\.css$/i,
-        use: ["style-loader", "css-loader"],
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
+    extensions: ['.tsx', '.ts', '.js'],
   },
   output: {
-    filename: "bundle.js",
-    path: path.resolve(__dirname, "dist"),
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'dist'),
   },
   devServer: {
-    static: path.join(__dirname, "dist"),
+    static: path.join(__dirname, 'dist'),
     compress: true,
     port: 9000,
     proxy: {
       '/thread': 'http://localhost:3000',
-    }
+    },
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: "src/frontend/index.html",
+      template: 'src/frontend/index.html',
     }),
     new CopyPlugin({
-      patterns: [{ from: "src/frontend/static" }],
+      patterns: [{ from: 'src/frontend/static' }],
     }),
   ],
 };
