@@ -1,5 +1,7 @@
 /** @jsx jsx */
-import React, {
+import {
+  ComponentProps,
+  Fragment,
   FunctionComponent,
   useCallback,
   useEffect,
@@ -14,7 +16,7 @@ import {
 } from '../shared/flashback-utils';
 import { FlashbackThread } from '../shared/flashback-types';
 
-const Link: FunctionComponent<React.ComponentProps<'a'>> = ({
+const Link: FunctionComponent<ComponentProps<'a'>> = ({
   children,
   ...props
 }) => (
@@ -71,9 +73,9 @@ export const App: FunctionComponent = () => {
   );
 
   const fetchPages = useCallback(
-    (start?: number, pages?: number) => {
-      start = start || 0;
-      pages = pages || 3;
+    (_start?: number, _pages?: number) => {
+      const start = _start || 0;
+      const pages = _pages || 3;
 
       if (lastFetchedPage >= start + pages || fetching) {
         return;
@@ -151,7 +153,7 @@ export const App: FunctionComponent = () => {
         <Link href={flashbackThreadLink(thread.id)}>{thread.title}</Link>
       </h1>
       {thread.pages.map((page) => (
-        <React.Fragment key={page.index}>
+        <Fragment key={page.index}>
           <h2 className="page-number">
             <Link href={flashbackThreadLink(thread.id, page.index)}>
               {page.index + 1} / {thread.pagesAvailable}
@@ -170,7 +172,7 @@ export const App: FunctionComponent = () => {
               <FlashbackPostBody>{post.body}</FlashbackPostBody>
             </article>
           ))}
-        </React.Fragment>
+        </Fragment>
       ))}
     </main>
   );
