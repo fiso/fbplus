@@ -12,6 +12,7 @@ import './app.css';
 import { isExternalLink } from '../shared/is-external-link';
 import {
   flashbackThreadLink,
+  flashbackUrl,
   formatDateAndTime,
 } from '../shared/flashback-utils';
 import { FlashbackThread } from '../shared/flashback-types';
@@ -32,6 +33,36 @@ const Link: FunctionComponent<ComponentProps<'a'>> = ({
     {children}
   </a>
 );
+
+const Dots: FunctionComponent = () => {
+  const maxDots = 3;
+  const [dots, setDots] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(
+      () => setDots(dots < maxDots ? dots + 1 : 0),
+      200
+    );
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [dots]);
+
+  return (
+    <Fragment>
+      {[...new Array(maxDots)].map((_, i) => (
+        <span
+          key={i}
+          style={{
+            opacity: i < dots ? 1 : 0,
+          }}
+        >
+          .
+        </span>
+      ))}
+    </Fragment>
+  );
+};
 
 type FlashbackPostBodyProps = {
   children: string;
@@ -84,15 +115,20 @@ export const App: FunctionComponent = () => {
       async function fetchThread() {
         console.info(`Fetching pages ${start} – ${start + pages}…`);
         setFetching(true);
-        const result = await fetch(
-          `/thread?url=${threadUrl}&start=${start}&pages=${pages}`
-        );
-        if (result.status !== 200) {
+        try {
+          const result = await fetch(
+            `/thread?url=${threadUrl}&start=${start}&pages=${pages}`
+          );
+          if (result.status !== 200) {
+            console.error('HTTP status ' + result.status);
+            return;
+          }
+          appendContent(await result.json());
+        } catch {
           console.error('Error fetching!');
-          return;
+        } finally {
+          setFetching(false);
         }
-        appendContent(await result.json());
-        setFetching(false);
       }
 
       fetchThread();
@@ -147,33 +183,77 @@ export const App: FunctionComponent = () => {
     };
   }, [onHashChange]);
 
+  const onClickUrlPrefix = useCallback((e) => {
+    navigator.clipboard.writeText(e.currentTarget.innerText);
+    const confirmation = document.createElement('div');
+    confirmation.classList.add('copy-confirmation');
+    console.log(e.currentTarget);
+    e.currentTarget.appendChild(confirmation);
+    setTimeout(() => confirmation.classList.add('disappear'), 0);
+    setTimeout(() => confirmation.remove(), 5000);
+  }, []);
+
+  const exampleLink = `${location.origin}#${flashbackUrl}/t3357499`;
+
+  const onChangeUrl = useCallback((e) => {
+    document.location.hash = e.currentTarget.value;
+    window.dispatchEvent(new Event('hashchange', { bubbles: true }));
+  }, []);
+
   return (
-    <main>
-      <h1>
-        <Link href={flashbackThreadLink(thread.id)}>{thread.title}</Link>
-      </h1>
-      {thread.pages.map((page) => (
-        <Fragment key={page.index}>
-          <h2 className="page-number">
-            <Link href={flashbackThreadLink(thread.id, page.index)}>
-              {page.index + 1} / {thread.pagesAvailable}
-            </Link>
-          </h2>
-          {page.posts.map((post) => (
-            <article key={post.id}>
-              <header>
-                <Link href={post.user.link}>{post.user.username}</Link>
-                <time>
-                  <Link href={post.link}>
-                    {formatDateAndTime(post.timestamp)}
-                  </Link>
-                </time>
-              </header>
-              <FlashbackPostBody>{post.body}</FlashbackPostBody>
-            </article>
+    <main className={fetching ? 'fetching' : ''}>
+      {thread.id ? (
+        <Fragment>
+          <h1>
+            <Link href={flashbackThreadLink(thread.id)}>{thread.title}</Link>
+          </h1>
+          {thread.pages.map((page) => (
+            <Fragment key={page.index}>
+              <h2 className="page-number">
+                <Link href={flashbackThreadLink(thread.id, page.index)}>
+                  {page.index + 1} / {thread.pagesAvailable}
+                </Link>
+              </h2>
+              {page.posts.map((post) => (
+                <article key={post.id}>
+                  <header>
+                    <Link href={post.user.link}>{post.user.username}</Link>
+                    <time>
+                      <Link href={post.link}>
+                        {formatDateAndTime(post.timestamp)}
+                      </Link>
+                    </time>
+                  </header>
+                  <FlashbackPostBody>{post.body}</FlashbackPostBody>
+                </article>
+              ))}
+            </Fragment>
           ))}
         </Fragment>
-      ))}
+      ) : (
+        <div className="nothread">
+          <p>Klistra in en länk till en Flashback-tråd här</p>
+          <input autoFocus placeholder="Länk" onChange={onChangeUrl} />
+          <p className="moreinfo">
+            Alternativt kan du klistra/skriva in{' '}
+            <code onClick={onClickUrlPrefix}>{location.origin}#</code> direkt i
+            addressfältet, framför en Flashback-tråd. Så att det ser ut så här:{' '}
+            <Link href={exampleLink}>
+              <code>{exampleLink}</code>
+            </Link>
+          </p>
+        </div>
+      )}
+      <div
+        className="loading"
+        {...(fetching
+          ? {}
+          : {
+              'aria-hidden': true,
+            })}
+      >
+        Hämtar sidor{fetching && <Dots />}
+      </div>
     </main>
   );
 };

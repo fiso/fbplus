@@ -6,7 +6,7 @@
 }
 
 html {
-  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
 }
 
 main {
@@ -59,7 +59,7 @@ main > hr {
 }
 
 main > article > header {
-  font-size: .8em;
+  font-size: 0.8em;
   display: flex;
   justify-content: space-between;
   margin-bottom: 2px;
@@ -88,4 +88,79 @@ main > article:nth-child(odd) .post_message {
   font-weight: initial;
   box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.15);
   margin-bottom: 16px;
+}
+
+.loading {
+  transition: opacity 300ms ease;
+  display: flex;
+  justify-content: center;
+}
+
+.loading[aria-hidden='true'] {
+  opacity: 0;
+}
+
+.loading span {
+  transition: opacity 300ms ease;
+}
+
+.fetching .nothread {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nothread {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 600px;
+  margin: 30vh auto 0;
+  justify-content: center;
+}
+
+.nothread input {
+  padding: 8px 24px;
+  font-size: 1.4em;
+}
+
+.nothread > :not(:last-child) {
+  margin-bottom: 16px;
+}
+
+.nothread code {
+  display: inline-flex;
+  background-color: #1f1f34;
+  color: #ede0af;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-family: monospace;
+  position: relative;
+  top: -1px;
+  cursor: pointer;
+}
+
+.nothread p {
+  text-align: center;
+}
+
+.copy-confirmation {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 2px);
+  background-color: #1f1f34;
+  color: #ede0af;
+  transition: transform 500ms 100ms cubic-bezier(0.93, 0, 1, 1),
+    opacity 300ms 300ms cubic-bezier(0.93, 0, 1, 1);
+  padding: 4px 6px;
+  border-radius: 2px;
+  box-shadow: 0px 3px 8px 0px rgba(0, 0, 0, 0.15);
+}
+
+.copy-confirmation::before {
+  content: 'Kopierat 👍';
+}
+
+.copy-confirmation.disappear {
+  transform: translate3d(0, -2em, 0);
+  opacity: 0;
 }
