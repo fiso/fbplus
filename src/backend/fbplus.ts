@@ -141,11 +141,15 @@ async function fetchThread(
   const html = await fetchAndReencode(url);
   const doc = parse(html);
 
-  const result = /\/t(?<threadId>.*?)(p|$)/gms.exec(url);
-  if (!result?.groups?.threadId) {
+  console.log({ url });
+  const threadLink = doc.querySelector('.page-title h1 a');
+  console.log(threadLink?.attributes);
+  const threadId = threadLink?.attributes['href']?.replace(/^\/t/g, '');
+  if (!threadId) {
     throw new Error('Failed to find thread id');
   }
-  thread.id = result.groups.threadId;
+  thread.id = threadId;
+  console.log(thread.id);
 
   const totalPages = doc.querySelector('[data-total-pages]');
   thread.pagesAvailable = Number(
@@ -188,6 +192,7 @@ const app = express();
 app.get('/thread', async function (req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const threadUrl = req.query.url;
+  console.log('Got req for', threadUrl);
   const startPage = Number(req.query.start || 0);
   const pages = req.query.pages ? Number(req.query.pages) : undefined;
 

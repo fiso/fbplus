@@ -77,6 +77,10 @@ const FlashbackPostBody: FunctionComponent<FlashbackPostBodyProps> = ({
   />
 );
 
+function filterHash(hash: string) {
+  return hash.split('#')[0];
+}
+
 export const App: FunctionComponent = () => {
   const [fetching, setFetching] = useState(false);
   const [threadUrl, setThreadUrl] = useState('');
@@ -103,6 +107,7 @@ export const App: FunctionComponent = () => {
     [thread.pages]
   );
 
+  // https://www.flashback.org/p78504587#p78504587
   const fetchPages = useCallback(
     (_start?: number, _pages?: number) => {
       const start = _start || 0;
@@ -127,7 +132,7 @@ export const App: FunctionComponent = () => {
         } catch {
           console.error('Error fetching!');
         } finally {
-          setFetching(false);
+          // setFetching(false);
         }
       }
 
@@ -175,6 +180,8 @@ export const App: FunctionComponent = () => {
   }, []);
 
   useEffect(() => {
+    const hash = filterHash(document.location.hash.slice(1));
+    document.location.hash = hash;
     setThreadUrl(document.location.hash.slice(1));
     window.addEventListener('hashchange', onHashChange);
 
@@ -196,7 +203,7 @@ export const App: FunctionComponent = () => {
   const exampleLink = `${location.origin}#${flashbackUrl}/t3357499`;
 
   const onChangeUrl = useCallback((e) => {
-    document.location.hash = e.currentTarget.value;
+    document.location.hash = filterHash(e.currentTarget.value);
     window.dispatchEvent(new Event('hashchange', { bubbles: true }));
   }, []);
 
