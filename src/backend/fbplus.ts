@@ -24,15 +24,18 @@ const maxCacheAge = 1000 * 60 * 10; // 10 minutes
 function fromCache<T>(key: string): T | undefined {
   const item = cache[key];
   if (!item) {
+    console.info(`Cache object ${key} nonexistant`);
     return undefined;
   }
 
   const now = Number(new Date());
   if (now - item.timestamp > maxCacheAge) {
+    console.info(`Cache object ${key} has timed out`);
     delete cache[key];
     return undefined;
   }
 
+  console.info(`Cache object ${key} valid`);
   return item.obj as T;
 }
 
@@ -143,6 +146,7 @@ async function fetchThread(
     console.info('Cache hit');
     return cached;
   }
+  console.info('Cache miss');
   const thread = {
     id: '',
     title: '',

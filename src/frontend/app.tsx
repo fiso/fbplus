@@ -108,6 +108,11 @@ export const App: FunctionComponent = () => {
     [thread.pages]
   );
 
+  const onClickGoHome = useCallback(() => {
+    window.location.hash = "";
+    window.location.reload();
+  }, []);
+
   // https://www.flashback.org/p78504587#p78504587
   const fetchPages = useCallback(
     (_start?: number, _pages?: number) => {
@@ -157,14 +162,18 @@ export const App: FunctionComponent = () => {
   const onScrollWindow = useCallback(() => {
     const now = Number(new Date());
     if (now < scrollThrottleTime) {
+      console.log('Too soon');
       return;
     }
     setScrollThrottleTime(now + 100);
 
     const scrollPosition =
       window.scrollY / (window.document.body.scrollHeight - window.innerHeight);
-    if (scrollPosition > 0.9 && lastFetchedPage < pagesAvailable) {
+    if (scrollPosition > 0.7 && lastFetchedPage < pagesAvailable) {
+      console.log('Triggering fetch');
       fetchPages(lastFetchedPage, 3);
+    } else {
+      console.log({scrollPosition, lastFetchedPage, pagesAvailable});
     }
   }, [fetchPages, lastFetchedPage, pagesAvailable, scrollThrottleTime]);
 
@@ -223,6 +232,7 @@ export const App: FunctionComponent = () => {
       {thread.id ? (
         <Fragment>
           <h1>
+            <a onClick={onClickGoHome}>⬅</a>
             <Link href={flashbackThreadLink(thread.id)}>{thread.title}</Link>
           </h1>
           {thread.pages.map((page) => (

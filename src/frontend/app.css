@@ -37,6 +37,14 @@ main > h1 {
   padding-bottom: 12px;
   padding-right: 160px;
   background-color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  main > h1 {
+    padding-right: 0;
+  }
 }
 
 main > h1 a,
