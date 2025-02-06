@@ -82,6 +82,7 @@ function filterHash(hash: string) {
 }
 
 export const App: FunctionComponent = () => {
+  const [fetchError, setFetchError] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [threadUrl, setThreadUrl] = useState('');
   const [thread, setThread] = useState<FlashbackThread>({
@@ -113,6 +114,12 @@ export const App: FunctionComponent = () => {
       const start = _start || 0;
       const pages = _pages || 3;
 
+      /*
+      if (start > 0) {
+        setFetchError(true);
+        return;
+      }
+      /**/
       if (lastFetchedPage >= start + pages || fetching) {
         return;
       }
@@ -132,7 +139,7 @@ export const App: FunctionComponent = () => {
         } catch {
           console.error('Error fetching!');
         } finally {
-          // setFetching(false);
+          setFetching(false);
         }
       }
 
@@ -142,6 +149,10 @@ export const App: FunctionComponent = () => {
   );
 
   const [scrollThrottleTime, setScrollThrottleTime] = useState(0);
+
+  const onClickRetry = useCallback(() => {
+    fetchPages(lastFetchedPage, 3);
+  }, []);
 
   const onScrollWindow = useCallback(() => {
     const now = Number(new Date());
@@ -252,7 +263,7 @@ export const App: FunctionComponent = () => {
         </div>
       )}
       <div
-        className="loading"
+        className="status loading"
         {...(fetching
           ? {}
           : {
@@ -260,6 +271,17 @@ export const App: FunctionComponent = () => {
             })}
       >
         Hämtar sidor{fetching && <Dots />}
+      </div>
+      <div
+        className="status fetch-error"
+        {...(fetchError
+          ? {}
+          : {
+              'aria-hidden': true,
+            })}
+      >
+        <span>Något gick fel</span>
+        <button onClick={onClickRetry}>Försök igen</button>
       </div>
     </main>
   );

@@ -62,12 +62,16 @@ async function fetchPosts(
   const cacheKey = 'fetchPosts' + url;
   const cached = fromCache<FlashbackPost[]>(cacheKey);
   if (cached) {
+    console.info('Cache hit for posts');
     return cached;
   }
   html = html || (await fetchAndReencode(url));
+  console.info('Post html fetch complete');
   const doc = parse(html);
+  console.info('Post html parse complete');
   const postElements = doc.querySelectorAll('[data-postid]');
   const posts = postElements.map((pe) => {
+    console.info('Post iter');
     const body = pe.querySelector('.post_message');
     const id = pe.attributes['data-postid'];
     const usernameEl = pe.querySelector('.post-user-username');
@@ -75,6 +79,13 @@ async function fetchPosts(
     const userLink = usernameEl?.attributes.href;
     const timestamp = pe.querySelector('.post-heading')?.innerText.trim();
     const link = pe.querySelector('[target="new"]')?.attributes.href;
+    try {
+      assert(body && timestamp && username && userLink && link);
+    } catch {
+      console.error('>>>>>>>>>>>>>>>>>>>>>>>>>>');
+      console.error({ id });
+      console.error({ body, timestamp, username, userLink, link });
+    }
     assert(body && timestamp && username && userLink && link);
     const relevantPart = timestamp.slice(0, timestamp.indexOf('\n'));
     const parts = relevantPart.split(',').map((s) => s.trim());
@@ -129,6 +140,7 @@ async function fetchThread(
   const cacheKey = 'fetchThread' + url + firstPage + maxPages;
   const cached = fromCache<FlashbackThread>(cacheKey);
   if (cached) {
+    console.info('Cache hit');
     return cached;
   }
   const thread = {
@@ -139,17 +151,19 @@ async function fetchThread(
   };
 
   const html = await fetchAndReencode(url);
+  console.info('Url fetch complete');
   const doc = parse(html);
+  console.info('Parse complete');
 
-  console.log({ url });
+  console.info({ url });
   const threadLink = doc.querySelector('.page-title h1 a');
-  console.log(threadLink?.attributes);
+  console.info(threadLink?.attributes);
   const threadId = threadLink?.attributes['href']?.replace(/^\/t/g, '');
   if (!threadId) {
     throw new Error('Failed to find thread id');
   }
   thread.id = threadId;
-  console.log(thread.id);
+  console.info(thread.id);
 
   const totalPages = doc.querySelector('[data-total-pages]');
   thread.pagesAvailable = Number(
@@ -172,6 +186,7 @@ async function fetchThread(
     pageNumber < firstPage + maxPages;
     pageNumber++
   ) {
+    console.info(`Fetching posts ${pageNumber} / ${firstPage + maxPages}`);
     const posts = await fetchPosts(
       baseUrl + 'p' + String(pageNumber + 1),
       pageNumber === firstPage ? html : undefined
@@ -189,10 +204,16 @@ async function fetchThread(
 
 const app = express();
 
+let requestId = 0;
+
 app.get('/thread', async function (req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   const threadUrl = req.query.url;
-  console.log('Got req for', threadUrl);
+  const startTime = Number(new Date());
+  requestId++;
+  console.info(
+    `>> ${requestId} Got request for ${threadUrl} ${req.query.start} ${req.query.pages}`
+  );
   const startPage = Number(req.query.start || 0);
   const pages = req.query.pages ? Number(req.query.pages) : undefined;
 
@@ -202,12 +223,15 @@ app.get('/thread', async function (req, res) {
     return;
   }
 
+  const time = () => ((Number(new Date()) - startTime) / 1000).toFixed(2);
   try {
     const thread = await fetchThread(threadUrl, startPage, pages);
     res.json(thread);
+    console.info(`<< ${requestId} Thread fetch complete (${time()} sec)`);
   } catch (e) {
-    console.error('Error fetching!');
+    console.error(`<< ${requestId} Error fetching! (${time()} sec)`);
     console.error(e);
+    console.error(`<<<<<<<<<<<<<<<<<<<< ${requestId}`);
     res.statusCode = 500;
     res.end();
   }

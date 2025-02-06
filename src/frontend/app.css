@@ -15,6 +15,18 @@ main {
 
 a {
   color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+button {
+  padding: 1em 3em;
+  font-size: inherit;
+  border-radius: 4px;
+  border: 0;
+  background-color: #000;
+  color: #fff;
+  cursor: pointer;
 }
 
 main > h1 {
@@ -90,14 +102,23 @@ main > article:nth-child(odd) .post_message {
   margin-bottom: 16px;
 }
 
-.loading {
+.status {
   transition: opacity 300ms ease;
   display: flex;
   justify-content: center;
 }
 
-.loading[aria-hidden='true'] {
+.status[aria-hidden='true'] {
   opacity: 0;
+}
+
+.fetch-error {
+  flex-direction: column;
+  align-items: center;
+}
+
+.fetch-error button {
+  margin-top: 12px;
 }
 
 .loading span {
@@ -141,6 +162,7 @@ main > article:nth-child(odd) .post_message {
 
 .nothread p {
   text-align: center;
+  word-break: break-word;
 }
 
 .copy-confirmation {
